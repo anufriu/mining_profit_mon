@@ -1,4 +1,5 @@
 import hive_api_wrapper as api
+import minerstat_api as m_api
 import configparser
 import traceback
 import sys
@@ -34,6 +35,10 @@ try:
     config = configparser.ConfigParser()
     config.read('config.ini')
     hiveos_token = config['hiveos'].get('token')
+    power_price = config['constants'].get('powercost')
+    if not power_price:
+        logger.warning('power proce is not set using 0.1$')
+        power_price = 0.1
     if hiveos_token:
         pass
     else:
@@ -43,21 +48,72 @@ except configparser.Error:
     logger.error(f'problem with config parsing: {traceback.print_exception()}\n exiting...')
     sys.exit(1)
 
+class Worker_profit():
+    def __init__(self, data) -> None:
+        self.data = data
+        self.w_name = h_api.h_get_worker_name(data)
+        self.w_hashrate = h_api.h_get_worker_hashrate(data)
+        self.w_algo = h_api.h_get_worker_algo(data)
+        self.w_power_cons = h_api.h_get_worker_power_cons(data)
+        self.w_get_coin = h_api.h_get_worker_coin(data)
+        self.dirty_profit = self.calculate_coin_profit()
+        self.clean_profit = self.calculate_clean_profit()
+
+    def get_coin_info(self, coin)-> list:
+        data = m_api.Wrapper().get_coin_info(coin)
+        logger.debug(f'got answer from minerstat: {data}')
+        return data
+
+    def calculate_coin_profit(self):
+        ''' calculate profit in reward unit for 1 hour mining'''
+        profit = []
+        for c in self.w_get_coin:
+            coinstat = self.get_coin_info(c)
+            if not coinstat:
+                logger.error(f'can calculate profit for {c}')
+                return
+            try:
+                reward = coinstat['reward']
+                reward_unit = coinstat['reward_unit']
+                usd_price = coinstat['price']
+                logger.info(f'reward for 1 hour mining {c} for 1 h/s '\
+                    f'is: {reward} {reward_unit}')
+                hour_reward = self.w_hashrate.get(c)*reward*1000
+                hour_usd_reward = hour_reward*usd_price
+                logger.info(f'reward for 1 hour mining {c} for {self.w_hashrate.get(c)} h/s '\
+                    f'is: {hour_reward} {reward_unit}')
+                logger.info(f'Dirty hour USD profit: {hour_usd_reward} $')
+            except KeyError:
+                logger.error(f'cant get reward drom minerstat!')
+            profit.append({'coin':c, 'hour_reward': hour_reward,
+             'hour_usd_reward':hour_usd_reward})
+        return profit
+            
+    def calculate_powerdraw(self, hours=1):
+        powerdraw1h = self.w_power_cons*hours   # watts per 1h
+        logger.debug(f'powerdraw 1h = {powerdraw1h}, price = {power_price}')
+        powerdraw1h_cost = int(powerdraw1h)*float(power_price)
+        logger.info(f'worker electricity price per {hours}h: {powerdraw1h_cost}$')
+        return powerdraw1h_cost
+
+    def calculate_clean_profit(self):
+        '''calculate profit with power consumption'''
+        e_cost = self.calculate_powerdraw()
+        for i in self.dirty_profit:
+            hour_clean_profit = i['hour_usd_reward'] - e_cost
+            logger.info(f'Hour clean profit for worker '\
+                f'{self.w_name}: {hour_clean_profit} $ for coin: {i["coin"]}')
+            daily_clean_profit = (i['hour_usd_reward']*24) - self.calculate_powerdraw(24)
+            logger.info('Daily clean profit for worker '\
+                f'{self.w_name}: {daily_clean_profit} $ for coin: {i["coin"]}')
+
+
 
 def logic():
     workers_info = h_api.h_get_workers_info(workers_dict)
     for worker in workers_info['data']:
-        print(worker['stats'].keys())
-        print(worker['miners_summary'])
         worker_data = dict(worker)
-        w_name = h_api.h_get_worker_name(worker_data)
-        w_hashrate = h_api.h_get_worker_hashrate(worker_data)
-        w_algo = h_api.h_get_worker_algo(worker_data)
-        w_power_cons = h_api.h_get_worker_power_cons(worker_data)
-        w_get_coin = h_api.h_get_worker_coin(worker_data)
-        logger.debug(f'worker name: {w_name}, algo: {w_algo}, '\
-             f'hashrate: {w_hashrate} power_consumption: {w_power_cons}, coin: {w_get_coin}')
-    
+        worker_attr = Worker_profit(worker_data)
 
 if __name__ == '__main__':
     ar = argparser()
