@@ -45,15 +45,19 @@ except configparser.Error:
 
 
 def logic():
-    worker_info = h_api.h_get_workers_info(workers_dict)
-    power_report = h_api.h_get_power_report(farms_list)
-    #worker_gpus = h_api.h_get_workers_gpus(farms_list[0], workers_dict[farms_list[0]])
-    #print(worker_gpus)
-    #h_api.h_post_benchmark(farm_id=farms_list[0], worker_id=3704769)
-    farm_benchmarks = h_api.h_get_benchmark_jobs(farms_list[0], workers_dict[farms_list[0]])
-    print(farm_benchmarks)
-    #print(worker_info)
-    print(farms_list, workers_dict)
+    workers_info = h_api.h_get_workers_info(workers_dict)
+    for worker in workers_info['data']:
+        print(worker['stats'].keys())
+        print(worker['miners_summary'])
+        worker_data = dict(worker)
+        w_name = h_api.h_get_worker_name(worker_data)
+        w_hashrate = h_api.h_get_worker_hashrate(worker_data)
+        w_algo = h_api.h_get_worker_algo(worker_data)
+        w_power_cons = h_api.h_get_worker_power_cons(worker_data)
+        w_get_coin = h_api.h_get_worker_coin(worker_data)
+        logger.debug(f'worker name: {w_name}, algo: {w_algo}, '\
+             f'hashrate: {w_hashrate} power_consumption: {w_power_cons}, coin: {w_get_coin}')
+    
 
 if __name__ == '__main__':
     ar = argparser()

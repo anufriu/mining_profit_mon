@@ -122,7 +122,7 @@ class Wrapper():
         for farm in farm_info.keys():
             for worker in farm_info[farm]:
                 try:
-                    req = self.h_req_preset(endpoint=f'farms/{37347}/workers', req_type='get')
+                    req = self.h_req_preset(endpoint=f'farms/{farm}/workers', req_type='get')
                     if req and req.status_code == 200:
                         return req.json()
                     else:
@@ -184,6 +184,56 @@ class Wrapper():
         logger.info('processed')
         return res
 
+    def h_get_worker_hashrate(self, worker)->dict:
+        '''returns worker hashrate in hash (not mega hash or etc) by coin'''
+        try:
+            return { h['coin']:h['hash'] for h in worker['miners_summary']['hashrates']}
+        except KeyError:
+            logger.error(f'No such keys in json')
+            return None
+        except TypeError:
+            logger.error(f'invalid worker info type recieved!')
+            return None
+
+    def h_get_worker_algo(self, worker)->list:
+        try:
+            return [h['algo'] for h in worker['miners_summary']['hashrates']]
+        except KeyError:
+            logger.error(f'No such keys in json')
+            return None
+        except TypeError:
+            logger.error(f'invalid worker info type recieved!')
+            return None
+
+    def h_get_worker_coin(self, worker)->list:
+        try:
+            return [h['coin'] for h in worker['miners_summary']['hashrates']]
+        except KeyError:
+            logger.error(f'No such keys in json')
+            return None
+        except TypeError:
+            logger.error(f'invalid worker info type recieved!')
+            return None
+
+    def h_get_worker_power_cons(self, worker)->str:
+        try:
+            return worker['stats']['power_draw']
+        except KeyError:
+            logger.error(f'No such keys in json')
+            return None
+        except TypeError:
+            logger.error(f'invalid worker info type recieved!')
+            return None       
+
+    def h_get_worker_name(self, worker)->str:
+        try:
+            return worker['name']
+        except KeyError:
+            logger.error(f'No such keys in json')
+            return None
+        except TypeError:
+            logger.error(f'invalid worker info type recieved!')
+            return None
 
 
 
