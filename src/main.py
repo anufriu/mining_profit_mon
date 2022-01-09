@@ -5,6 +5,7 @@ import traceback
 import sys
 import argparse
 import os
+import time
 from loguru import logger
 
 def argparser():
@@ -73,12 +74,12 @@ class Worker_profit():
                 logger.error(f'can calculate profit for {c}')
                 return
             try:
-                reward = coinstat['reward']
+                reward = coinstat['reward']*1000
                 reward_unit = coinstat['reward_unit']
                 usd_price = coinstat['price']
                 logger.info(f'reward for 1 hour mining {c} for 1 h/s '\
                     f'is: {reward} {reward_unit}')
-                hour_reward = self.w_hashrate.get(c)*reward*1000
+                hour_reward = self.w_hashrate.get(c)*reward
                 hour_usd_reward = hour_reward*usd_price
                 logger.info(f'reward for 1 hour mining {c} for {self.w_hashrate.get(c)} h/s '\
                     f'is: {hour_reward} {reward_unit}')
@@ -115,9 +116,21 @@ def logic():
         worker_data = dict(worker)
         worker_attr = Worker_profit(worker_data)
 
+def mainloop():
+    while True:
+        try:
+            logic()
+            logger.info('sleeping')
+            time.sleep(1800)
+        except KeyboardInterrupt:
+            logger.info('keyboard interrupt...')
+            sys.exit(0)
+
+
+
 if __name__ == '__main__':
     ar = argparser()
     h_api = api.Wrapper(hiveos_token)
     farms_list = h_api.h_get_farms_ids()
     workers_dict = h_api.h_get_workers_ids(farms_list)
-    logic()
+    mainloop()
