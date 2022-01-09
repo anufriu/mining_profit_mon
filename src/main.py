@@ -6,6 +6,7 @@ import sys
 import argparse
 import os
 import time
+import prometheus_metrics as prom_exporter
 from loguru import logger
 
 def argparser():
@@ -107,21 +108,27 @@ class Worker_profit():
             daily_clean_profit = (i['hour_usd_reward']*24) - self.calculate_powerdraw(24)
             logger.info('Daily clean profit for worker '\
                 f'{self.w_name}: {daily_clean_profit} $ for coin: {i["coin"]}')
-
-
+        return daily_clean_profit, hour_clean_profit
+            
 
 def logic():
     workers_info = h_api.h_get_workers_info(workers_dict)
     for worker in workers_info['data']:
         worker_data = dict(worker)
         worker_attr = Worker_profit(worker_data)
+        for c in worker_attr.w_get_coin:
+            labels = [worker_attr.w_name, c]
+            logger.debug(f'created labels {labels}')
+            daily_metric, hour_metric = worker_attr.clean_profit
+            write_to_prom.set_mark(daily_metric, labels, 'daily')
+            write_to_prom.set_mark(hour_metric, labels, 'hourly')
 
 def mainloop():
     while True:
         try:
             logic()
             logger.info('sleeping')
-            time.sleep(1800)
+            time.sleep(30)
         except KeyboardInterrupt:
             logger.info('keyboard interrupt...')
             sys.exit(0)
@@ -133,4 +140,5 @@ if __name__ == '__main__':
     h_api = api.Wrapper(hiveos_token)
     farms_list = h_api.h_get_farms_ids()
     workers_dict = h_api.h_get_workers_ids(farms_list)
+    write_to_prom = prom_exporter.Prom_metrics()
     mainloop()
