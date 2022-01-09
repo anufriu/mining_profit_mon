@@ -4,7 +4,7 @@ from prometheus_client import start_http_server, Summary, Gauge, CollectorRegist
 
 class Prom_metrics():
     def __init__(self):
-        self.http_server = start_http_server(8000)
+        self.http_server = start_http_server(8910)
         self.gauge_daily = Gauge('clear_profitline_daily', 'farm profit', 
             ['worker_name', 'coin'])
         self.gauge_hourly = Gauge('clear_profitline_hourly', 'farm profit',
