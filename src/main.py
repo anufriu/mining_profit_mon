@@ -98,9 +98,10 @@ class Worker_profit():
         logger.info(f'worker electricity price per {hours}h: {powerdraw1h_cost}$')
         return powerdraw1h_cost
 
-    def calculate_clean_profit(self):
+    def calculate_clean_profit(self)->dict:
         '''calculate profit with power consumption'''
         e_cost = self.calculate_powerdraw()
+        clean_profit_dct = {}
         for i in self.dirty_profit:
             hour_clean_profit = i['hour_usd_reward'] - e_cost
             logger.info(f'Hour clean profit for worker '\
@@ -108,7 +109,8 @@ class Worker_profit():
             daily_clean_profit = (i['hour_usd_reward']*24) - self.calculate_powerdraw(24)
             logger.info('Daily clean profit for worker '\
                 f'{self.w_name}: {daily_clean_profit} $ for coin: {i["coin"]}')
-        return daily_clean_profit, hour_clean_profit
+            clean_profit_dct[i['coin']] = {'daily': daily_clean_profit, 'hourly': hour_clean_profit}
+        return clean_profit_dct
             
 
 def logic():
@@ -119,7 +121,7 @@ def logic():
         for c in worker_attr.w_get_coin:
             labels = [worker_attr.w_name, c]
             logger.debug(f'created labels {labels}')
-            daily_metric, hour_metric = worker_attr.clean_profit
+            daily_metric, hour_metric = worker_attr.clean_profit[c]['daily'], worker_attr.clean_profit[c]['hourly']
             write_to_prom.set_mark(daily_metric, labels, 'daily')
             write_to_prom.set_mark(hour_metric, labels, 'hourly')
 
