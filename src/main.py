@@ -130,7 +130,7 @@ def mainloop():
         try:
             logic()
             logger.info('sleeping')
-            time.sleep(30)
+            time.sleep(600)
         except KeyboardInterrupt:
             logger.info('keyboard interrupt...')
             sys.exit(0)
