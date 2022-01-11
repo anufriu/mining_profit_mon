@@ -111,19 +111,25 @@ class Worker_profit():
                 f'{self.w_name}: {daily_clean_profit} $ for coin: {i["coin"]}')
             clean_profit_dct[i['coin']] = {'daily': daily_clean_profit, 'hourly': hour_clean_profit}
         return clean_profit_dct
-            
-
+    
+def unic_coin_list():
+    pass
 def logic():
     workers_info = h_api.h_get_workers_info(workers_dict)
     for worker in workers_info['data']:
         worker_data = dict(worker)
         worker_attr = Worker_profit(worker_data)
+        counter = 0
         for c in worker_attr.w_get_coin:
             labels = [worker_attr.w_name, c]
             logger.debug(f'created labels {labels}')
             daily_metric, hour_metric = worker_attr.clean_profit[c]['daily'], worker_attr.clean_profit[c]['hourly']
-            write_to_prom.set_mark(daily_metric, labels, 'daily')
-            write_to_prom.set_mark(hour_metric, labels, 'hourly')
+            write_to_prom.set_mark(daily_metric, labels, 'clear_profitline_daily')
+            write_to_prom.set_mark(hour_metric, labels, 'clear_profitline_hourly')
+            write_to_prom.set_mark(worker_attr.w_hashrate.get(c), [labels[0], 
+                worker_attr.w_algo[counter]],'worker_hashrate')
+            counter += 1
+    
 
 def mainloop():
     while True:
