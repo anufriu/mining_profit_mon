@@ -114,6 +114,7 @@ class Worker_profit():
     
 def unic_coin_list():
     pass
+
 def logic():
     workers_info = h_api.h_get_workers_info(workers_dict)
     for worker in workers_info['data']:
@@ -124,7 +125,7 @@ def logic():
             labels = [worker_attr.w_name, c]
             logger.debug(f'created labels {labels}')
             daily_metric, hour_metric = worker_attr.clean_profit[c]['daily'], worker_attr.clean_profit[c]['hourly']
-            write_to_prom.set_mark(daily_metric, labels, 'clear_profitline_daily')
+            #write_to_prom.set_mark(daily_metric, labels, 'clear_profitline_daily') # could be done in prometheus
             write_to_prom.set_mark(hour_metric, labels, 'clear_profitline_hourly')
             write_to_prom.set_mark(worker_attr.w_hashrate.get(c), [labels[0], 
                 worker_attr.w_algo[counter]],'worker_hashrate')
