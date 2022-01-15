@@ -18,7 +18,6 @@ def argparser():
                         dest='loglevel',
                         default="INFO")
     args = parser.parse_args()
-    print(args.loglevel)
     os.environ["LOGLEVEL"] = str(args.loglevel)
     return args
 
@@ -38,6 +37,7 @@ try:
     config.read('config.ini')
     hiveos_token = config['hiveos'].get('token')
     power_price = config['constants'].get('powercost')
+    hiveon_eth_wallet = config['hiveon_stat'].get('miner_wallet')
     if not power_price:
         logger.warning('power proce is not set using 0.1$')
         power_price = 0.1
@@ -50,6 +50,12 @@ except configparser.Error:
     logger.error(f'problem with config parsing: {traceback.print_exception()}\n exiting...')
     sys.exit(1)
 
+class Coin():
+    def get_coin_info(coin)-> list:
+        data = m_api.Wrapper().get_coin_info(coin)
+        logger.debug(f'got answer from minerstat: {data}')
+        return data
+
 class Worker_profit():
     def __init__(self, data) -> None:
         self.data = data
@@ -61,16 +67,13 @@ class Worker_profit():
         self.dirty_profit = self.calculate_coin_profit()
         self.clean_profit = self.calculate_clean_profit()
 
-    def get_coin_info(self, coin)-> list:
-        data = m_api.Wrapper().get_coin_info(coin)
-        logger.debug(f'got answer from minerstat: {data}')
-        return data
+
 
     def calculate_coin_profit(self):
         ''' calculate profit in reward unit for 1 hour mining'''
         profit = []
         for c in self.w_get_coin:
-            coinstat = self.get_coin_info(c)
+            coinstat = Coin.get_coin_info(c)
             if not coinstat:
                 logger.error(f'can calculate profit for {c}')
                 return
@@ -111,26 +114,31 @@ class Worker_profit():
                 f'{self.w_name}: {daily_clean_profit} $ for coin: {i["coin"]}')
             clean_profit_dct[i['coin']] = {'daily': daily_clean_profit, 'hourly': hour_clean_profit}
         return clean_profit_dct
-    
-def unic_coin_list():
+
+def calculate_actual_profit_hiveon(hiveon_eth_wallet):
+
     pass
 
 def logic():
     workers_info = h_api.h_get_workers_info(workers_dict)
+    coinlist = []
     for worker in workers_info['data']:
         worker_data = dict(worker)
         worker_attr = Worker_profit(worker_data)
         counter = 0
         for c in worker_attr.w_get_coin:
+            if c not in coinlist:
+                coinlist.append(c)
+                price = Coin.get_coin_info(c)
+                write_to_prom.set_mark(price['price'], c, 'coin_price')
             labels = [worker_attr.w_name, c]
             logger.debug(f'created labels {labels}')
-            daily_metric, hour_metric = worker_attr.clean_profit[c]['daily'], worker_attr.clean_profit[c]['hourly']
-            #write_to_prom.set_mark(daily_metric, labels, 'clear_profitline_daily') # could be done in prometheus
+            hour_metric = worker_attr.clean_profit[c]['hourly']
             write_to_prom.set_mark(hour_metric, labels, 'clear_profitline_hourly')
             write_to_prom.set_mark(worker_attr.w_hashrate.get(c), [labels[0], 
                 worker_attr.w_algo[counter]],'worker_hashrate')
             counter += 1
-    
+
 
 def mainloop():
     while True:
