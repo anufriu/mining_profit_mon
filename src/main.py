@@ -119,6 +119,7 @@ def calculate_actual_profit_hiveon(hiveon_eth_wallet):
 def logic():
     try:
         workers_info = h_api.h_get_workers_info(workers_dict)
+        coinlist = []
         for worker in workers_info['data']:
             worker_data = dict(worker)
             worker_attr = Worker_profit(worker_data)
@@ -136,7 +137,7 @@ def logic():
                     worker_attr.w_algo[counter]],'worker_hashrate')
                 counter += 1
     except Exception as e:
-        logger.error(f'some shit happened! sleeping anf hope inst gone')
+        logger.error(f'some shit happened! sleeping and hope inst gone: {e}')
     
 
 def mainloop():
