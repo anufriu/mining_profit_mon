@@ -35,7 +35,7 @@ class Prom_metrics():
             elif metric_name == 'worker_hashrate':
                 self.gauge_hashrate.labels(worker_name=labels[0], algo=labels[1]).set(metric)
             elif metric_name == 'coin_price':
-                self.gauge_coin_price.labels(coin=labels[0]).set(metric)
+                self.gauge_coin_price.labels(coin=labels).set(metric)
         except Exception as e:
             logger.error(f'error while setting metric {metric_name}, {e}')
 
