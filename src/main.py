@@ -109,10 +109,7 @@ class Worker_profit():
             hour_clean_profit = i['hour_usd_reward'] - e_cost
             logger.info(f'Hour clean profit for worker '\
                 f'{self.w_name}: {hour_clean_profit} $ for coin: {i["coin"]}')
-            daily_clean_profit = (i['hour_usd_reward']*24) - self.calculate_powerdraw(24)
-            logger.info('Daily clean profit for worker '\
-                f'{self.w_name}: {daily_clean_profit} $ for coin: {i["coin"]}')
-            clean_profit_dct[i['coin']] = {'daily': daily_clean_profit, 'hourly': hour_clean_profit}
+            clean_profit_dct[i['coin']] = {'hourly': hour_clean_profit}
         return clean_profit_dct
 
 def calculate_actual_profit_hiveon(hiveon_eth_wallet):
@@ -120,25 +117,6 @@ def calculate_actual_profit_hiveon(hiveon_eth_wallet):
     pass
 
 def logic():
-    workers_info = h_api.h_get_workers_info(workers_dict)
-    coinlist = []
-    for worker in workers_info['data']:
-        worker_data = dict(worker)
-        worker_attr = Worker_profit(worker_data)
-        counter = 0
-        for c in worker_attr.w_get_coin:
-            if c not in coinlist:
-                coinlist.append(c)
-                price = Coin.get_coin_info(c)
-                write_to_prom.set_mark(price['price'], c, 'coin_price')
-            labels = [worker_attr.w_name, c]
-            logger.debug(f'created labels {labels}')
-            hour_metric = worker_attr.clean_profit[c]['hourly']
-            write_to_prom.set_mark(hour_metric, labels, 'clear_profitline_hourly')
-            write_to_prom.set_mark(worker_attr.w_hashrate.get(c), [labels[0], 
-                worker_attr.w_algo[counter]],'worker_hashrate')
-            counter += 1
-
     try:
         workers_info = h_api.h_get_workers_info(workers_dict)
         for worker in workers_info['data']:
@@ -152,8 +130,7 @@ def logic():
                     write_to_prom.set_mark(price['price'], c, 'coin_price')
                 labels = [worker_attr.w_name, c]
                 logger.debug(f'created labels {labels}')
-                daily_metric, hour_metric = worker_attr.clean_profit[c]['daily'], worker_attr.clean_profit[c]['hourly']
-                #write_to_prom.set_mark(daily_metric, labels, 'clear_profitline_daily') # could be done in prometheus
+                hour_metric =  worker_attr.clean_profit[c]['hourly']
                 write_to_prom.set_mark(hour_metric, labels, 'clear_profitline_hourly')
                 write_to_prom.set_mark(worker_attr.w_hashrate.get(c), [labels[0], 
                     worker_attr.w_algo[counter]],'worker_hashrate')
