@@ -139,6 +139,28 @@ def logic():
                 worker_attr.w_algo[counter]],'worker_hashrate')
             counter += 1
 
+    try:
+        workers_info = h_api.h_get_workers_info(workers_dict)
+        for worker in workers_info['data']:
+            worker_data = dict(worker)
+            worker_attr = Worker_profit(worker_data)
+            counter = 0
+            for c in worker_attr.w_get_coin:
+                if c not in coinlist:
+                    coinlist.append(c)
+                    price = Coin.get_coin_info(c)
+                    write_to_prom.set_mark(price['price'], c, 'coin_price')
+                labels = [worker_attr.w_name, c]
+                logger.debug(f'created labels {labels}')
+                daily_metric, hour_metric = worker_attr.clean_profit[c]['daily'], worker_attr.clean_profit[c]['hourly']
+                #write_to_prom.set_mark(daily_metric, labels, 'clear_profitline_daily') # could be done in prometheus
+                write_to_prom.set_mark(hour_metric, labels, 'clear_profitline_hourly')
+                write_to_prom.set_mark(worker_attr.w_hashrate.get(c), [labels[0], 
+                    worker_attr.w_algo[counter]],'worker_hashrate')
+                counter += 1
+    except Exception as e:
+        logger.error(f'some shit happened! sleeping anf hope inst gone')
+    
 
 def mainloop():
     while True:
