@@ -57,7 +57,7 @@ except configparser.Error:
     sys.exit(1)
 
 class Coin():
-    def get_coin_info(self, coin)-> list:
+    def get_coin_info(coin)-> list:
         data = m_api.Wrapper().get_coin_info(coin)
         logger.debug(f'got answer from minerstat: {data}')
         return data
