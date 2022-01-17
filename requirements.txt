@@ -1,4 +1,4 @@
-prometheus_metrics
+prometheus_client
 loguru
 argparse
 configparser
