@@ -1,13 +1,14 @@
+'''get data from minerstat'''
+import os
+import sys
 import hive_api_wrapper as api
 import minerstat_api as m_api
 import configparser
 import traceback
-import sys
 import argparse
-import os
 import time
-import prometheus_metrics as prom_exporter
 from loguru import logger
+import prometheus_metrics as prom_exporter
 
 def argparser():
     parser = argparse.ArgumentParser(description='sukablyat')
@@ -21,14 +22,15 @@ def argparser():
     return args
 
 #logger
+loglevel= os.environ.get("LOGLEVEL", "DEBUG")
 logger.remove()
 logger.level("INFO", color="<green>")
 logger.level("DEBUG", color="<magenta>")
 logger.level("WARNING", color="<yellow>")
 logger.level("ERROR", color="<red>")
 logger.add(sink=sys.stdout,
-format="[{time:YYYY-MM-DD at HH:mm:ss}] <level>[{level}] <bold>[{function}]</bold> {message}</level>",
-level= os.environ.get('LOGLEVEL', "DEBUG"), backtrace=True, diagnose=True)
+format="[{time:YYYY-MM-DD at HH:mm:ss}] <level>[{level}]<bold>[{function}]</bold>{message}</level>",
+level=loglevel, backtrace=True, diagnose=True)
 
 #getconfig
 try:
@@ -40,7 +42,7 @@ try:
     try:
         prometheus_port = int(config['prometheus'].get('port'))
     except KeyError:
-        logger.info(f' Prometheus port did not set in config using default port 8910')
+        logger.info(' Prometheus port did not set in config using default port 8910')
         prometheus_port = 8910
     if not power_price:
         logger.warning('power price is not set using 0.1$')
@@ -55,7 +57,7 @@ except configparser.Error:
     sys.exit(1)
 
 class Coin():
-    def get_coin_info(coin)-> list:
+    def get_coin_info(self, coin)-> list:
         data = m_api.Wrapper().get_coin_info(coin)
         logger.debug(f'got answer from minerstat: {data}')
         return data
