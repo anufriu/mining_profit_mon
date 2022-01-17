@@ -37,8 +37,9 @@ try:
     hiveos_token = config['hiveos'].get('token')
     power_price = float(config['constants'].get('powercost'))/1000
     hiveon_eth_wallet = config['hiveon_stat'].get('miner_wallet')
-    prometheus_port = int(config['prometheus'].get('port'))
-    if not prometheus_port:
+    try:
+        prometheus_port = int(config['prometheus'].get('port'))
+    except KeyError:
         logger.info(f' Prometheus port did not set in config using default port 8910')
         prometheus_port = 8910
     if not power_price:
@@ -119,19 +120,29 @@ def calculate_actual_profit_hiveon(hiveon_eth_wallet):
 
     pass
 
+def generate_network_hrate_metric(coin_name:str, coin_hash:int, coin_algo:str):
+    try:
+        labels= [coin_name, coin_algo]
+        write_to_prom.set_mark(coin_hash, labels, 'network_hashrate')
+    except Exception as e:
+        logger.error(f'Error while writing to prometheus: {e}')
+
 def logic():
     try:
         workers_info = h_api.h_get_workers_info(workers_dict)
         coinlist = []
+        coindata = []
         for worker in workers_info['data']:
             worker_data = dict(worker)
             worker_attr = Worker_profit(worker_data)
             counter = 0
             for c in worker_attr.w_get_coin:
                 if c not in coinlist:
+                    coin_data = Coin.get_coin_info(c)
+                    print(c, coinlist)
                     coinlist.append(c)
-                    price = Coin.get_coin_info(c)
-                    write_to_prom.set_mark(price['price'], c, 'coin_price')
+                    coindata.append(coin_data)
+                    write_to_prom.set_mark(coin_data['price'], c, 'coin_price')
                 labels = [worker_attr.w_name, c]
                 logger.debug(f'created labels {labels}')
                 hour_metric =  worker_attr.clean_profit[c]['hourly']
@@ -139,8 +150,11 @@ def logic():
                 write_to_prom.set_mark(worker_attr.w_hashrate.get(c), [labels[0], 
                     worker_attr.w_algo[counter]],'worker_hashrate')
                 counter += 1
+        for coin in coindata:
+            generate_network_hrate_metric(coin.get('name'), 
+                coin.get('network_hashrate'), coin.get('algorithm') )
     except Exception as e:
-        logger.error(f'some shit happened! sleeping and hope inst gone: {e}')
+        logger.error(f'some shit happened! sleeping and hope its gone: {e}')
     
 
 def mainloop():
