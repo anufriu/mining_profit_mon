@@ -2,3 +2,6 @@ prometheus_client
 loguru
 argparse
 configparser
+minerstat_api
+hive_api_wrapper
+prometheus_metrics
