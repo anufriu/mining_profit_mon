@@ -29,7 +29,7 @@ logger.level("DEBUG", color="<magenta>")
 logger.level("WARNING", color="<yellow>")
 logger.level("ERROR", color="<red>")
 logger.add(sink=sys.stdout,
-format="[{time:YYYY-MM-DD at HH:mm:ss}] <level>[{level}]<bold>[{function}]</bold>{message}</level>",
+format="[{time:YYYY-MM-DD at HH:mm:ss}] <level>[{level}]<bold>[{function}] </bold>{message}</level>",
 level=loglevel, backtrace=True, diagnose=True)
 
 #getconfig
@@ -135,6 +135,9 @@ def logic():
         coinlist = []
         coindata = []
         for worker in workers_info['data']:
+            if not worker['stats']['online']:
+                logger.info(f'worker {worker["name"]} offline, skipping')
+                continue
             worker_data = dict(worker)
             worker_attr = Worker_profit(worker_data)
             counter = 0
