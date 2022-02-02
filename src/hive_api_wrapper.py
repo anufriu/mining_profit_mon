@@ -67,6 +67,9 @@ class Wrapper():
     def h_get_workers_ids(self, farms) ->dict:
         '''get farm\worker dict {farm_id: [{worker_name: worker_id}]} '''
         farm_ids = farms
+        if not farms:
+            logger.error('Cant get info about farms')
+            return None
         for farm_id in farm_ids:
             data = self.h_req_preset(endpoint=f'farms/{farm_id}/workers', req_type='get')
             if data:
