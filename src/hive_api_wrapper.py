@@ -38,10 +38,8 @@ class Wrapper():
             logger.debug(f'URL: {url_and_endpoint}, request type: {req_type}, payload: {payload}')
             if req_type == "get":
                 req = requests.get(url_and_endpoint, headers=self.headers)
-                res = req
             elif req_type == "post":
                 req = requests.post(url_and_endpoint, headers=self.headers, json=payload)
-                res = req
             if req.status_code in [200, 201]:
                 logger.info('status code 200 all ok')
                 res = req
@@ -71,7 +69,7 @@ class Wrapper():
             logger.error('Cant get info about farms')
             return None
         for farm_id in farm_ids:
-            data = self.h_req_preset(endpoint=f'farms/{farm_id}/workers', req_type='get')
+            data = self.h_req_preset(endpoint=f'farms/{farm_id}/workers2', req_type='get')
             if data:
                 worker_ids = { farm_id:[{worker['name']:worker['id']}
                             for worker in data.json().get('data')]}
@@ -105,15 +103,14 @@ class Wrapper():
         '''
         logger.info(f'collecting info..')
         for farm in farm_info.keys():
-            for worker in farm_info[farm]:
-                try:
-                    req = self.h_req_preset(endpoint=f'farms/{farm}/workers', req_type='get')
-                    if req and req.status_code == 200:
-                        return req.json()
-                    else:
-                        return None
-                except Exception as e:
-                    logger.error(f'Exception occured while processing {list(worker.keys())[0]} --> {e}')
+            try:
+                req = self.h_req_preset(endpoint=f'farms/{farm}/workers2', req_type='get')
+                if req and req.status_code == 200:
+                    return req.json()
+                else:
+                    return None
+            except Exception as e:
+                    logger.error(f'Exception occured while processing: {e}')
 
     def h_get_workers_gpus(self, farm_id, worker_ids:list):
         '''
