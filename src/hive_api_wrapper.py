@@ -156,7 +156,6 @@ class Wrapper():
                 'algos': ['ethash']}
         try:
             req = self.h_req_preset(endpoint=endpoint, req_type='post', payload=data)
-            print(req.json())
             if req and req.status_code == 201:
                 res = req.json()
                 logger.info(f'sucsesfully processed with response {res}')

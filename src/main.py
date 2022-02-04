@@ -144,7 +144,6 @@ def logic():
             for c in worker_attr.w_get_coin:
                 if c not in coinlist:
                     coin_data = Coin.get_coin_info(c)
-                    print(c, coinlist)
                     coinlist.append(c)
                     coindata.append(coin_data)
                     write_to_prom.set_mark(coin_data['price'], c, 'coin_price')
