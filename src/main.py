@@ -67,6 +67,10 @@ class Worker_profit():
         self.data = data
         self.w_name = h_api.h_get_worker_name(data)
         self.w_hashrate = h_api.h_get_worker_hashrate(data)
+        self.skip = False
+        if not self.w_hashrate:
+            self.skip = True
+            return
         self.w_algo = h_api.h_get_worker_algo(data)
         self.w_power_cons = h_api.h_get_worker_power_cons(data)
         self.w_get_coin = h_api.h_get_worker_coin(data)
@@ -78,27 +82,31 @@ class Worker_profit():
     def calculate_coin_profit(self):
         ''' calculate profit in reward unit for 1 hour mining'''
         profit = []
-        for c in self.w_get_coin:
-            coinstat = Coin.get_coin_info(c)
-            if not coinstat:
-                logger.error(f'can calculate profit for {c}')
-                return
-            try:
-                reward = coinstat['reward']*1000
-                reward_unit = coinstat['reward_unit']
-                usd_price = coinstat['price']
-                logger.info(f'reward for 1 hour mining {c} for 1 h/s '\
-                    f'is: {reward} {reward_unit}')
-                hour_reward = self.w_hashrate.get(c)*reward
-                hour_usd_reward = hour_reward*usd_price
-                logger.info(f'reward for 1 hour mining {c} for {self.w_hashrate.get(c)} h/s '\
-                    f'is: {hour_reward} {reward_unit}')
-                logger.info(f'Dirty hour USD profit: {hour_usd_reward} $')
-            except KeyError:
-                logger.error(f'cant get reward drom minerstat!')
-            profit.append({'coin':c, 'hour_reward': hour_reward,
-             'hour_usd_reward':hour_usd_reward})
-        return profit
+        try:
+            for c in self.w_get_coin:
+                coinstat = Coin.get_coin_info(c)
+                if not coinstat:
+                    logger.error(f'can calculate profit for {c}')
+                    return
+                try:
+                    reward = coinstat['reward']*1000
+                    reward_unit = coinstat['reward_unit']
+                    usd_price = coinstat['price']
+                    logger.info(f'reward for 1 hour mining {c} for 1 h/s '\
+                        f'is: {reward} {reward_unit}')
+                    hour_reward = self.w_hashrate.get(c)*reward
+                    hour_usd_reward = hour_reward*usd_price
+                    logger.info(f'reward for 1 hour mining {c} for {self.w_hashrate.get(c)} h/s '\
+                        f'is: {hour_reward} {reward_unit}')
+                    logger.info(f'Dirty hour USD profit: {hour_usd_reward} $')
+                except KeyError:
+                    logger.error(f'cant get reward drom minerstat!')
+                profit.append({'coin':c, 'hour_reward': hour_reward,
+                'hour_usd_reward':hour_usd_reward})
+            return profit
+        except TypeError:
+            logger.warning('cant get coin attr, probably custom miner is set')    
+            return
             
     def calculate_powerdraw(self, hours=1):
         powerdraw1h = self.w_power_cons*hours   # watts per 1h
@@ -141,6 +149,9 @@ def logic():
             worker_data = dict(worker)
             worker_attr = Worker_profit(worker_data)
             counter = 0
+            if worker_attr.skip:
+                logger.info('no data for worker, skipping')
+                continue
             for c in worker_attr.w_get_coin:
                 if c not in coinlist:
                     coin_data = Coin.get_coin_info(c)
@@ -158,6 +169,7 @@ def logic():
             generate_network_hrate_metric(coin.get('name'), 
                 coin.get('network_hashrate'), coin.get('algorithm') )
     except Exception as e:
+        print(traceback.format_exc())
         logger.error(f'some shit happened! sleeping and hope its gone: {e}')
     
 
