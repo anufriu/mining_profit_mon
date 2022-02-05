@@ -156,8 +156,8 @@ def logic():
                 logger.info('no data for worker, skipping')
                 continue
             for i in worker_attr.dirty_profit:
-                write_to_prom.set_mark('worker_incoin_profit', [i.get('coin'), worker_attr.w_name],
-                i.get('hour_reward')['reward'])
+                write_to_prom.set_mark(i.get('hour_reward')['reward'], [i.get('coin'),
+                 worker_attr.w_name], 'worker_incoin_profit')
             for c in worker_attr.w_get_coin:
                 if c not in coinlist:
                     coin_data = Coin.get_coin_info(c)
