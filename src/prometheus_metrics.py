@@ -27,8 +27,8 @@ class Prom_metrics():
             ['coin'])
         self.gauge_network_hashrate = Gauge('network_hashrate', 
                     'current network hasrate', ['coin', 'algo'])
-        self.gauge_est_in_coin_profit = Gauge('incoin_profit', 'profit in coin',
-                    ['coin'])
+        self.gauge_est_in_coin_profit = Gauge('worker_incoin_profit', 'profit in coin',
+                    ['coin', 'worker'])
 
     def set_mark(self, metric, labels, metric_name):
         '''set Gauge mark and add labels to metric'''
@@ -41,7 +41,8 @@ class Prom_metrics():
                 self.gauge_coin_price.labels(coin=labels).set(metric)
             elif metric_name == 'network_hashrate':
                 self.gauge_network_hashrate.labels(coin=labels[0], algo=labels[1]).set(metric)
-            elif metric_name == 'incoin_profit':
-                self.gauge_est_in_coin_profit.labels(coin=labels).set(metric)
+            elif metric_name == 'worker_incoin_profit':
+                self.gauge_est_in_coin_profit.labels(coin=labels[0], worker=labels[1]).set(metric)
+            logger.debug(f'created metric with type {metric_name} and value is: {metric}')
         except Exception as e:
             logger.error(f'error while setting metric {metric_name}, {e}')
