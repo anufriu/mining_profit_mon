@@ -38,6 +38,8 @@ at this moment we have only 3 type of metric. They all Gauge
 1) clear_profitline_hourly - shows estimated profit by coin\worker considering power consumption*powercost
 2) worker_hashrate - showы worker hashrate
 3) coin_price - shows the price of the coin that is currently being mined.
+4) network_hashrate - network hashrate summary
+5) worker_incoin_profit - worker estimated profit in current mining coin
 
 ###### Prometheus configuration
 prometehus http server starts on port 8910 by default, you can change this in config.ini file
