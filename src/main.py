@@ -154,9 +154,11 @@ def logic():
                 continue
             for c in worker_attr.w_get_coin:
                 if c not in coinlist:
+                    hour_reward = [i.get('hour_reward') for i in worker_attr.dirty_profit if i.get('coin') == c][0]
                     coin_data = Coin.get_coin_info(c)
                     coinlist.append(c)
                     coindata.append(coin_data)
+                    write_to_prom.set_mark(hour_reward, c, 'incoin_profit')
                     write_to_prom.set_mark(coin_data['price'], c, 'coin_price')
                 labels = [worker_attr.w_name, c]
                 logger.debug(f'created labels {labels}')
