@@ -143,7 +143,7 @@ class Calculations():
         hour_clean_profit = dirty_profit[coin]['hour_usd_reward'] - e_cost
         logger.info(f'Hour clean profit for worker '
                     f'{w_name}: {hour_clean_profit}'\
-                    '$ for coin: {dirty_profit["coin"]}')
+                    f'$ for coin: {dirty_profit["coin"]}')
         clean_profit_dct[coin] = {'hourly': hour_clean_profit}
         return clean_profit_dct
 
