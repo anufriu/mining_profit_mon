@@ -138,3 +138,6 @@ dmypy.json
 cython_debug/
 .ini
 src/config.ini
+.vscode/settings.json
+.gitignore
+.vscode/launch.json
