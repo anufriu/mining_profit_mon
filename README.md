@@ -29,7 +29,7 @@ miner_wallet='ETHWALLET'
 ```
 __start the code__
 ```
-python3 main.py
+python3 main.py -c $PATHTOCONFIGFILE
 ```
 #### Creating grafana dashboard
 you can export [this](https://github.com/anufriu/hiveos_mon/blob/master/grafana_preset/Miner%20stat-example.json) file to grafana or create new dashboard
