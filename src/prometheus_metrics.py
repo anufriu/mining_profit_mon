@@ -1,8 +1,9 @@
 '''Creates interface t osend metrics to prometheus'''
 import os
 import sys
-from prometheus_client import start_http_server, Gauge
+
 from loguru import logger
+from prometheus_client import Gauge, start_http_server
 
 #logger
 loglevel= os.environ.get("LOGLEVEL", "DEBUG")
