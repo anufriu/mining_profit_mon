@@ -8,9 +8,9 @@ import traceback
 
 from loguru import logger
 
-import hive_api_wrapper as api
-import minerstat_api as m_api
-import prometheus_metrics as prom_exporter
+from src import hive_api_wrapper as api
+from src import minerstat_api as m_api
+from src import prometheus_metrics as prom_exporter
 
 
 def argparser():
