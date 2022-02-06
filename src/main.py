@@ -6,11 +6,12 @@ import sys
 import time
 import traceback
 
-from loguru import logger
+import hive_api_wrapper as api
+import minerstat_api as m_api
+import prometheus_metrics as prom_exporter
+from local_logger import create_logger
 
-from src import hive_api_wrapper as api
-from src import minerstat_api as m_api
-from src import prometheus_metrics as prom_exporter
+#from loguru import logger
 
 
 def argparser():
@@ -37,6 +38,9 @@ def argparser():
 
 # logger
 loglevel = os.environ.get("LOGLEVEL", "DEBUG")
+logger = create_logger(loglevel)
+
+'''
 logger.remove()
 logger.level("INFO", color="<green>")
 logger.level("DEBUG", color="<magenta>")
@@ -45,7 +49,7 @@ logger.level("ERROR", color="<red>")
 logger.add(sink=sys.stdout,
            format="[{time:YYYY-MM-DD at HH:mm:ss}] <level>[{level}]<bold>[{function}] </bold>{message}</level>",
            level=loglevel, backtrace=True, diagnose=True)
-
+'''
 # getconfig
 try:
     ar = argparser()

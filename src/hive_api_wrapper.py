@@ -2,18 +2,12 @@ import os
 import sys
 
 import requests
-from loguru import logger
+
+from local_logger import create_logger
 
 # logger
 loglevel = os.environ.get("LOGLEVEL", "DEBUG")
-logger.remove()
-logger.level("INFO", color="<green>")
-logger.level("DEBUG", color="<magenta>")
-logger.level("WARNING", color="<yellow>")
-logger.level("ERROR", color="<red>")
-logger.add(sink=sys.stdout,
-           format="[{time:YYYY-MM-DD at HH:mm:ss}] <level>[{level}]<bold>[{function}] </bold>{message}</level>",
-           level=loglevel, backtrace=True, diagnose=True)
+logger = create_logger(loglevel)
 
 
 class Wrapper():
