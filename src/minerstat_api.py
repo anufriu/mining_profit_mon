@@ -1,9 +1,8 @@
 import os
 import sys
+
 import requests
 from loguru import logger
-
-
 
 #logger
 loglevel= os.environ.get("LOGLEVEL", "DEBUG")

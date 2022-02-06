@@ -1,6 +1,7 @@
-import requests
-import sys
 import os
+import sys
+
+import requests
 from loguru import logger
 
 #logger

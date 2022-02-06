@@ -1,16 +1,24 @@
 '''get data from minerstat'''
+import argparse
+import configparser
 import os
 import sys
+import time
+import traceback
+
+from loguru import logger
+
 import hive_api_wrapper as api
 import minerstat_api as m_api
-import configparser
-import traceback
-import argparse
-import time
-from loguru import logger
 import prometheus_metrics as prom_exporter
 
+
 def argparser():
+    """[pars args from stdin]
+
+    Returns:
+        [object]: [with arguments]
+    """    
     parser = argparse.ArgumentParser(description='sukablyat')
     parser.add_argument('-l', '--loglevel', 
                         help='loglevel', 
@@ -18,6 +26,11 @@ def argparser():
                         action='store',
                         dest='loglevel',
                         default="INFO")
+    parser.add_argument('-c', '--config',
+                        help='config path',
+                        action='store',
+                        dest='configpath',
+                        default='src/config.ini')
     args = parser.parse_args()
     return args
 
@@ -34,8 +47,9 @@ level=loglevel, backtrace=True, diagnose=True)
 
 #getconfig
 try:
+    ar = argparser()
     config = configparser.ConfigParser()
-    config.read('config.ini')
+    config.read(ar.configpath)
     hiveos_token = config['hiveos'].get('token')
     power_price = float(config['constants'].get('powercost'))/1000
     hiveon_eth_wallet = config['hiveon_stat'].get('miner_wallet')
@@ -47,15 +61,12 @@ try:
     if not power_price:
         logger.warning('power price is not set using 0.1$')
         power_price = 0.0001
-    if hiveos_token:
-        pass
-    else:
+    if not hiveos_token:
         logger.error(f'cant find token field check the config. exiting...')
         sys.exit(1)
 except configparser.Error:
     logger.error(f'problem with config parsing: {traceback.print_exception()}\n exiting...')
     sys.exit(1)
-
 class Coin():
     def get_coin_info(coin)-> list:
         data = m_api.Wrapper().get_coin_info(coin)
@@ -140,6 +151,13 @@ def generate_network_hrate_metric(coin_name:str, coin_hash:int, coin_algo:str):
     except Exception as e:
         logger.error(f'Error while writing to prometheus: {e}')
 
+def generate_hour_reward_metric(coin_name:str, worker_name:str,
+        coin_reward:float, metric_name:str):
+    try:
+        write_to_prom.set_mark(coin_reward, [coin_name, worker_name], metric_name)
+    except Exception as e:
+        logger.error(f'Error while writing to prometheus: {e}')
+        
 def logic():
     try:
         workers_info = h_api.h_get_workers_info(workers_dict)
@@ -156,8 +174,8 @@ def logic():
                 logger.info('no data for worker, skipping')
                 continue
             for i in worker_attr.dirty_profit:
-                write_to_prom.set_mark(i.get('hour_reward')['reward'], [i.get('coin'),
-                 worker_attr.w_name], 'worker_incoin_profit')
+                generate_hour_reward_metric(i.get('coin'), worker_attr.w_name, 
+                    i.get('hour_reward')['reward'], 'worker_incoin_profit')
             for c in worker_attr.w_get_coin:
                 if c not in coinlist:
                     coin_data = Coin.get_coin_info(c)
@@ -191,7 +209,6 @@ def mainloop():
 
 
 if __name__ == '__main__':
-    ar = argparser()
     h_api = api.Wrapper(hiveos_token)
     farms_list = h_api.h_get_farms_ids()
     workers_dict = h_api.h_get_workers_ids(farms_list)
