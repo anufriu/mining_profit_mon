@@ -137,7 +137,6 @@ class Calculations():
         return powerdraw1h_cost
 
     def calculate_clean_profit(self, coin, powercons, dirty_profit, w_name) -> dict:
-        print(dirty_profit)
         '''calculate profit with power consumption'''
         e_cost = self.calculate_powerdraw(powercons)
         clean_profit_dct = {}
@@ -185,7 +184,6 @@ def logic():
                     worker_attr.w_power_cons, worker_profit,
                      worker_attr.w_name)
                 worker_reward_by_hr = worker_profit.get(c)['hour_reward']['reward']
-                print(worker_reward_by_hr)
                 generate_hour_reward_metric(c, worker_attr.w_name,
                                             worker_reward_by_hr, 'worker_incoin_profit')
                 if c not in coinlist:
