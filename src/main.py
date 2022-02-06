@@ -6,6 +6,8 @@ import sys
 import time
 import traceback
 
+from attr import attr
+
 import hive_api_wrapper as api
 import minerstat_api as m_api
 import prometheus_metrics as prom_exporter
@@ -40,16 +42,6 @@ def argparser():
 loglevel = os.environ.get("LOGLEVEL", "DEBUG")
 logger = create_logger(loglevel)
 
-'''
-logger.remove()
-logger.level("INFO", color="<green>")
-logger.level("DEBUG", color="<magenta>")
-logger.level("WARNING", color="<yellow>")
-logger.level("ERROR", color="<red>")
-logger.add(sink=sys.stdout,
-           format="[{time:YYYY-MM-DD at HH:mm:ss}] <level>[{level}]<bold>[{function}] </bold>{message}</level>",
-           level=loglevel, backtrace=True, diagnose=True)
-'''
 # getconfig
 try:
     ar = argparser()
@@ -82,79 +74,78 @@ class Coin():
         logger.debug(f'got answer from minerstat: {data}')
         return data
 
-
-class Worker_profit():
+class Worker():
     def __init__(self, data) -> None:
-        self.data = data
         self.w_name = h_api.h_get_worker_name(data)
         self.w_hashrate = h_api.h_get_worker_hashrate(data)
-        self.skip = False
+        self.worker_online = True
         if not self.w_hashrate:
-            self.skip = True
+            self.worker_online = False
+        if not data['stats']['online']:
+            self.worker_online = False
+            logger.warning(f'{self.w_name} is OFFLINE, skipping')
             return
         self.w_algo = h_api.h_get_worker_algo(data)
-        self.w_power_cons = h_api.h_get_worker_power_cons(data)
         self.w_get_coin = h_api.h_get_worker_coin(data)
-        self.dirty_profit = self.calculate_coin_profit()
-        self.clean_profit = self.calculate_clean_profit()
+        self.w_power_cons = h_api.h_get_worker_power_cons(data)
 
+class Calculations():
+
+    def __init__(self) -> None:
+        pass
+
+    def calculate_coin_profit(self, coin, hashrate):
+        ''' calculate profit in reward unit for 1 hour mining'''
+        profit = {}
+        try:
+            coinstat = Coin.get_coin_info(coin)
+            if not coinstat:
+                logger.error(f'can calculate profit for {coin}')
+                return
+            try:
+                reward = coinstat['reward']*1000
+                reward_unit = coinstat['reward_unit']
+                usd_price = coinstat['price']
+                logger.info(f'reward for 1 hour mining {coin} for 1 h/s '
+                            f'is: {reward} {reward_unit}')
+                hour_reward = self.calculate_hashrate_reward(hashrate,
+                                                                reward, reward_unit, coin)
+                hour_usd_reward = hour_reward.get(
+                    coin).get('reward')*usd_price
+                logger.info(f'Dirty hour USD profit: {hour_usd_reward} $')
+            except KeyError:
+                logger.error(f'cant get reward from minerstat!')
+            profit[coin] ={'hour_reward': hour_reward.get(coin),
+                            'hour_usd_reward': hour_usd_reward}
+            return profit
+        except TypeError:
+            logger.warning('cant get coin attr, probably custom miner is set')
+            return
+            
     def calculate_hashrate_reward(self, hashrate, reward, reward_unit, coin) -> dict:
         h_rew = hashrate*reward
         logger.info(f'reward for 1 hour mining {coin} for {hashrate} h/s '
                     f'is: {h_rew} {reward_unit}')
         return {coin: {"reward": hashrate*reward, "unit": reward_unit}}
 
-    def calculate_coin_profit(self):
-        ''' calculate profit in reward unit for 1 hour mining'''
-        profit = []
-        try:
-            for c in self.w_get_coin:
-                coinstat = Coin.get_coin_info(c)
-                if not coinstat:
-                    logger.error(f'can calculate profit for {c}')
-                    return
-                try:
-                    reward = coinstat['reward']*1000
-                    reward_unit = coinstat['reward_unit']
-                    usd_price = coinstat['price']
-                    logger.info(f'reward for 1 hour mining {c} for 1 h/s '
-                                f'is: {reward} {reward_unit}')
-                    hour_reward = self.calculate_hashrate_reward(self.w_hashrate.get(c),
-                                                                 reward, reward_unit, c)
-                    hour_usd_reward = hour_reward.get(
-                        c).get('reward')*usd_price
-                    logger.info(f'Dirty hour USD profit: {hour_usd_reward} $')
-                except KeyError:
-                    logger.error(f'cant get reward from minerstat!')
-                profit.append({'coin': c, 'hour_reward': hour_reward.get(c),
-                               'hour_usd_reward': hour_usd_reward})
-            return profit
-        except TypeError:
-            logger.warning('cant get coin attr, probably custom miner is set')
-            return
-
-    def calculate_powerdraw(self, hours=1):
-        powerdraw1h = self.w_power_cons*hours   # watts per 1h
+    def calculate_powerdraw(self, powercons, hours=1):
+        powerdraw1h = powercons*hours   # watts per 1h
         logger.debug(f'powerdraw 1h = {powerdraw1h}, price = {power_price}')
         powerdraw1h_cost = int(powerdraw1h)*float(power_price)
         logger.info(
             f'worker electricity price per {hours}h: {powerdraw1h_cost}$')
         return powerdraw1h_cost
 
-    def calculate_clean_profit(self) -> dict:
+    def calculate_clean_profit(self, coin, powercons, dirty_profit, w_name) -> dict:
         '''calculate profit with power consumption'''
-        e_cost = self.calculate_powerdraw()
+        e_cost = self.calculate_powerdraw(powercons)
         clean_profit_dct = {}
-        for i in self.dirty_profit:
-            hour_clean_profit = i['hour_usd_reward'] - e_cost
-            logger.info(f'Hour clean profit for worker '
-                        f'{self.w_name}: {hour_clean_profit} $ for coin: {i["coin"]}')
-            clean_profit_dct[i['coin']] = {'hourly': hour_clean_profit}
+        hour_clean_profit = dirty_profit[coin]['hour_usd_reward'] - e_cost
+        logger.info(f'Hour clean profit for worker '
+                    f'{w_name}: {hour_clean_profit}'\
+                    '$ for coin: {dirty_profit["coin"]}')
+        clean_profit_dct[coin] = {'hourly': hour_clean_profit}
         return clean_profit_dct
-
-
-def calculate_actual_profit_hiveon(hiveon_eth_wallet):
-    pass
 
 
 def generate_network_hrate_metric(coin_name: str, coin_hash: int, coin_algo: str):
@@ -180,19 +171,21 @@ def logic():
         coinlist = []
         coindata = []
         for worker in workers_info['data']:
-            if not worker['stats']['online']:
-                logger.info(f'worker {worker["name"]} offline, skipping')
-                continue
             worker_data = dict(worker)
-            worker_attr = Worker_profit(worker_data)
+            worker_attr = Worker(worker_data)
+            worker_calc = Calculations()
             counter = 0
-            if worker_attr.skip:
-                logger.info('no data for worker, skipping')
+            if not worker_attr.worker_online:
                 continue
-            for i in worker_attr.dirty_profit:
-                generate_hour_reward_metric(i.get('coin'), worker_attr.w_name,
-                                            i.get('hour_reward')['reward'], 'worker_incoin_profit')
             for c in worker_attr.w_get_coin:
+                worker_profit = worker_calc.calculate_coin_profit(c,
+                    worker_attr.w_hashrate[c])
+                worker_profit_clean = worker_calc.calculate_clean_profit(c,
+                    worker_attr.w_power_cons, worker_profit,
+                     worker_attr.w_name)
+                worker_reward_by_hr = worker_profit.get(c)['hour_reward']['reward']
+                generate_hour_reward_metric(c, worker_attr.w_name,
+                                            worker_reward_by_hr, 'worker_incoin_profit')
                 if c not in coinlist:
                     coin_data = Coin.get_coin_info(c)
                     coinlist.append(c)
@@ -200,11 +193,11 @@ def logic():
                     write_to_prom.set_mark(coin_data['price'], c, 'coin_price')
                 labels = [worker_attr.w_name, c]
                 logger.debug(f'created labels {labels}')
-                hour_metric = worker_attr.clean_profit[c]['hourly']
+                hour_metric = worker_profit_clean.get(c)['hourly']
                 write_to_prom.set_mark(
                     hour_metric, labels, 'clear_profitline_hourly')
                 write_to_prom.set_mark(worker_attr.w_hashrate.get(c), [labels[0],
-                                                                       worker_attr.w_algo[counter]], 'worker_hashrate')
+                                        worker_attr.w_algo[counter]], 'worker_hashrate')
                 counter += 1
         for coin in coindata:
             generate_network_hrate_metric(coin.get('name'),
