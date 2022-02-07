@@ -29,7 +29,7 @@ class Wrapper():
         '''готовим обьект requests'''
         logger.info(
             f'processing endpoint {endpoint} with request type: {req_type}')
-        req = None
+        req = requests.get('default')
         try:
             url_and_endpoint = str(self.main_url+endpoint)
             logger.debug(
@@ -42,13 +42,12 @@ class Wrapper():
             elif req_type == "post":
                 req = requests.post(
                     url_and_endpoint, headers=self.headers, json=payload)
-            if req:
-                if req.status_code in [200, 201]:
-                    logger.info('status code 200 all ok')
-                else:
-                    logger.error(
-                        f'status code is not ok: {req.status_code} with message: {req.text}')
-            logger.debug(f'request result: {req}')
+            if req.status_code == requests.codes.ok:
+                logger.info('status code 200 all ok')
+            else:
+                logger.error(
+                    f'status code is not ok: {req.status_code} with message: {req.text}')
+            logger.debug(f'request result: {req}, {type(req)}')
         except requests.exceptions.RequestException as e:
             logger.error(f'problem with processing request to Hive got {e}')
         return req
