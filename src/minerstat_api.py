@@ -7,8 +7,6 @@ from local_logger import create_logger
 
 # logger
 loglevel = os.environ.get("LOGLEVEL", "DEBUG")
-# logger
-loglevel = os.environ.get("LOGLEVEL", "DEBUG")
 logger = create_logger(loglevel)
 
 
@@ -20,8 +18,8 @@ class Wrapper:
         self.headers = {'accept': 'application/json',
                         'Content-Type': 'application/json'}
 
-    def get_coin_info(self, ticker) -> dict:
-        '''Get hashrate\price\diff of requestet coin'''
+    def get_coin_info(self, ticker):
+        '''Get hashrate or price or diff of requestet coin'''
         try:
             req = requests.get(
                 f'{self.main_url}?list={ticker}', headers=self.headers)

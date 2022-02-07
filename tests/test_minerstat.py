@@ -1,4 +1,4 @@
-from src import minerstat_api, hive_api_wrapper, prometheus_metrics
+from src import minerstat_api
 
 
 def test_minerstat():
