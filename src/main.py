@@ -197,7 +197,6 @@ def logic():
                 if not worker_attr.w_hashrate:
                     logger.error('No info about worker hashrate, skipping')
                     continue
-
                 worker_profit = worker_calc.calculate_coin_profit(c,
                     worker_attr.w_hashrate[c])
                 worker_profit_clean = worker_calc.calculate_clean_profit(c,

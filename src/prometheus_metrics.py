@@ -45,6 +45,7 @@ class Prom_metrics():
                 self.gauge_est_in_coin_profit.labels(
                     coin=labels[0], worker=labels[1]).set(metric)
             logger.debug(
-                f'created metric with type {metric_name} and value is: {metric}')
+                f'created metric with type {metric_name} labels: {labels}' \
+                    f' and value is: {metric}')
         except Exception as e:
             logger.error(f'error while setting metric {metric_name}, {e}')

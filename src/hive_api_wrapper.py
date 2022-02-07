@@ -58,6 +58,24 @@ class Wrapper():
             logger.error(f'problem with processing request to Hive got {e}')
         return req
 
+    def _get_info_from_worker_dct(self, target_list:list, target_keys:list)->list:
+        '''
+        get list of dicts to gets values by keys
+        returns list 
+        '''
+        resulting_list = []
+        try:
+            for h in target_list:
+                for key in target_keys:
+                    if h.get(key):
+                        resulting_list.append(h.get(key))
+            return resulting_list
+        except KeyError:
+            logger.error(f'No such keys in json')
+        except TypeError:
+            logger.error(f'invalid worker info type recieved!')
+        return resulting_list  
+
     def h_get_farms_ids(self) -> list:
         '''get worker list'''
         farms_info = self.h_req_preset(endpoint='farms', req_type='get')
@@ -183,7 +201,25 @@ class Wrapper():
     def h_get_worker_hashrate(self, worker):
         '''returns worker hashrate in hash (not mega hash or etc) by coin'''
         try:
-            return {h['coin']: h['hash'] for h in worker['miners_summary']['hashrates']}
+            dict_with_hasrates = {}
+            target_lst = worker['miners_summary']['hashrates']
+            if not target_lst:
+                logger.error('cant get miner summary')
+                return
+            for miner in target_lst:
+                miner_l = list()
+                miner_l.append(miner)
+                # solomine
+                coin = self._get_info_from_worker_dct(miner_l, ['coin'])
+                hashrate = self._get_info_from_worker_dct(miner_l, ['hash'])
+                dict_with_hasrates[coin[0]] = hashrate[0]
+                # for dualmine
+                dcoin = self._get_info_from_worker_dct(miner_l, ['dcoin'])
+                dhash = self._get_info_from_worker_dct(miner_l, ['dhash'])
+                if dcoin:
+                    dict_with_hasrates[dcoin[0]] = dhash[0]
+            logger.debug(f'got reult {dict_with_hasrates}')
+            return dict_with_hasrates
         except KeyError:
             logger.error(f'No such keys in json')
             return None
@@ -193,7 +229,9 @@ class Wrapper():
 
     def h_get_worker_algo(self, worker):
         try:
-            return [h['algo'] for h in worker['miners_summary']['hashrates']]
+            target_lst = worker['miners_summary']['hashrates']
+            algolist = self._get_info_from_worker_dct(target_lst, ['algo', 'dalgo'])
+            return algolist
         except KeyError:
             logger.error(f'No such keys in json')
             return None
@@ -203,7 +241,9 @@ class Wrapper():
 
     def h_get_worker_coin(self, worker):
         try:
-            return [h['coin'] for h in worker['miners_summary']['hashrates']]
+            target_lst = worker['miners_summary']['hashrates']
+            coinlist = self._get_info_from_worker_dct(target_lst, ['coin', 'dcoin'])
+            return coinlist
         except KeyError:
             logger.error(f'No such keys in json')
             return None

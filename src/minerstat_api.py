@@ -7,8 +7,6 @@ from local_logger import create_logger
 
 # logger
 loglevel = os.environ.get("LOGLEVEL", "DEBUG")
-# logger
-loglevel = os.environ.get("LOGLEVEL", "DEBUG")
 logger = create_logger(loglevel)
 
 
