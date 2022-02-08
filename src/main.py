@@ -1,12 +1,12 @@
-'''get data from minerstat'''
+'''get data from minerstat and hiveos, compares it and creates
+prometheus metrics
+'''
 import argparse
 import configparser
 import os
 import sys
 import time
 import traceback
-
-from attr import attr
 
 import hive_api_wrapper as api
 import minerstat_api as m_api
