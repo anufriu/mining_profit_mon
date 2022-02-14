@@ -22,7 +22,7 @@ class Wrapper:
         self.wallet = wallet
         self.headers = {'Content-Type': 'application/json'}
         # ask 2miners about it cos eth in kson is int
-        self.reward_multy_map = {"eth": 0.000000001, "rvn": 1}
+        self.reward_multy_map = {"eth": 0.000000001, "rvn": 0.00000001}
 
     def get_sumreward_by_account(self) -> dict:
         """
