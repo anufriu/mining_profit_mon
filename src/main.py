@@ -173,18 +173,20 @@ def generate_hour_reward_metric(coin_name: str, worker_name: str,
     except Exception as e:
         logger.error(f'Error while writing to prometheus: {e}')
 
+
 def generate_2miners_reward_metric(coin_ticker: str):
     if coin_ticker in config['2miners_stat']:
         two_miners_coin_reward = t_miners_api(coin_ticker,
-                                            config['2miners_stat'][coin_ticker]).get_sumreward_by_account()
-        coin_reward_24h =two_miners_coin_reward['Last 24 hours']
+                                              config['2miners_stat'][coin_ticker]).get_sumreward_by_account()
+        coin_reward_24h = two_miners_coin_reward['Last 24 hours']
         try:
-            write_to_prom.set_mark(coin_reward_24h, [coin_ticker], 'two_miners_actual_profitline_24h')
+            write_to_prom.set_mark(
+                coin_reward_24h, [coin_ticker], 'two_miners_actual_profitline_24h')
         except Exception as e:
             logger.error(f'Error while writing to prometheus: {e}')
-        
+
     else:
-        logger.warning(f'ticker {coin_ticker} is not presented in 2Miners config section'\
+        logger.warning(f'ticker {coin_ticker} is not presented in 2Miners config section'
                        f'its probably being mined on other pool')
 
 
@@ -250,15 +252,17 @@ def logic():
                         f'cant get algo for worker {worker_attr.w_name}')
                     continue
                 write_to_prom.set_mark(worker_attr.w_hashrate[c], [labels[0],
-                                                                       worker_attr.w_algo[counter]], 'worker_hashrate')
+                                                                   worker_attr.w_algo[counter]], 'worker_hashrate')
                 counter += 1
         for coin in coindata:
             coin_name = coin.get('name')
             coin_ticker = coin.get('coin').lower()
             generate_network_hrate_metric(coin_name,
                                           coin.get('network_hashrate'), coin.get('algorithm'))
-            if config['2miners_stat']['enabled'] == 'True':
-                logger.debug('2 miners scrape setted to true in config, processing')
+            if  config.has_section('2miners_stat'):
+                if config['2miners_stat']['enabled'] == 'True':
+                    logger.debug(
+                        '2 miners scrape setted to true in config, processing')
                 generate_2miners_reward_metric(coin_ticker)
     except Exception as e:
         logger.error(
