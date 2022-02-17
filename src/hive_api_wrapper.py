@@ -220,12 +220,13 @@ class Wrapper():
                     dict_with_hasrates[dcoin[0]] = dhash[0]
             logger.debug(f'got reult {dict_with_hasrates}')
             return dict_with_hasrates
+        except IndexError as e:
+            logger.error(f'got index error while processing {e}')
         except KeyError:
             logger.error(f'No such keys in json')
-            return None
         except TypeError:
             logger.error(f'invalid worker info type recieved!')
-            return None
+        return None
 
     def h_get_worker_algo(self, worker):
         try:
@@ -234,10 +235,9 @@ class Wrapper():
             return algolist
         except KeyError:
             logger.error(f'No such keys in json')
-            return None
         except TypeError:
             logger.error(f'invalid worker info type recieved!')
-            return None
+        return None
 
     def h_get_worker_coin(self, worker):
         try:

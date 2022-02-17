@@ -10,7 +10,6 @@ loglevel = os.environ.get("LOGLEVEL", "DEBUG")
 logger = create_logger(loglevel)
 
 
-
 class Prom_metrics():
     '''creates http server and send metrics to promethus'''
 
@@ -26,8 +25,10 @@ class Prom_metrics():
                                             'current network hasrate', ['coin', 'algo'])
         self.gauge_est_in_coin_profit = Gauge('worker_incoin_profit', 'profit in coin',
                                               ['coin', 'worker'])
+        self.gauge_actual_in_coin_reward = Gauge('two_miners_actual_profitline_24h', 
+                                                'actual profit by coin ticker from 2miners',['coin'])
 
-    def set_mark(self, metric, labels, metric_name):
+    def set_mark(self, metric: float, labels: list, metric_name: str):
         '''set Gauge mark and add labels to metric'''
         try:
             if metric_name == 'clear_profitline_hourly':
@@ -44,8 +45,10 @@ class Prom_metrics():
             elif metric_name == 'worker_incoin_profit':
                 self.gauge_est_in_coin_profit.labels(
                     coin=labels[0], worker=labels[1]).set(metric)
+            elif metric_name == 'two_miners_actual_profitline_24h':
+                self.gauge_actual_in_coin_reward.labels(coin=labels[0]).set(metric)
             logger.debug(
-                f'created metric with type {metric_name} labels: {labels}' \
-                    f' and value is: {metric}')
+                f'created metric with type {metric_name} labels: {labels}'
+                f' and value is: {metric}')
         except Exception as e:
             logger.error(f'error while setting metric {metric_name}, {e}')
