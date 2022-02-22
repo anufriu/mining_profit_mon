@@ -1,5 +1,5 @@
+'''hiveos api wrapper with most useful methods'''
 import os
-import sys
 
 import requests
 
@@ -25,7 +25,7 @@ class Wrapper():
                         'Content-Type': 'application/json', 'Authorization': f'{token}'}
         self.main_url = 'https://api2.hiveos.farm/api/v2/'
 
-    def h_req_preset(self, endpoint: str, req_type: str = "get", payload: dict = {}):
+    def h_req_preset(self, endpoint: str, req_type: str = "get", payload: dict=None):
         '''готовим обьект requests'''
         logger.info(
             f'processing endpoint {endpoint} with request type: {req_type}')
@@ -38,7 +38,6 @@ class Wrapper():
                 f'URL: {url_and_endpoint}, request type: {req_type}, payload: {payload}')
             if req_type not in ["get", "post"]:
                 logger.error(f'usupported request type got {req_type}')
-                return 
             if req_type == "get":
                 req = requests.get(url_and_endpoint, headers=self.headers)
                 status_code= req.status_code
@@ -48,33 +47,33 @@ class Wrapper():
                     url_and_endpoint, headers=self.headers, json=payload)
                 status_code= req.status_code
                 text = req.text
-                
-            if status_code == requests.codes.ok:
+            if status_code == 200:
                 logger.info('status code 200 all ok')
             else:
                 logger.error(
                     f'status code is not ok: {status_code} with message: {text}')
-        except requests.exceptions.RequestException as e:
-            logger.error(f'problem with processing request to Hive got {e}')
+        except requests.exceptions.RequestException as error:
+            logger.error(f'problem with processing request to Hive got {error}')
         return req
 
-    def _get_info_from_worker_dct(self, target_list:list, target_keys:list)->list:
+    @staticmethod
+    def _get_info_from_worker_dct(target_list:list, target_keys:list)->list:
         '''
-        get list of dicts to gets values by keys
-        returns list 
+        get list of dicts to get values by keys
+        returns list
         '''
         resulting_list = []
         try:
-            for h in target_list:
+            for target in target_list:
                 for key in target_keys:
-                    if h.get(key):
-                        resulting_list.append(h.get(key))
+                    if target.get(key):
+                        resulting_list.append(target.get(key))
             return resulting_list
         except KeyError:
-            logger.error(f'No such keys in json')
+            logger.error('No such keys in json')
         except TypeError:
-            logger.error(f'invalid worker info type recieved!')
-        return resulting_list  
+            logger.error('invalid worker info type recieved!')
+        return resulting_list
 
     def h_get_farms_ids(self) -> list:
         '''get worker list'''
@@ -88,7 +87,7 @@ class Wrapper():
         return farms_ids
 
     def h_get_workers_ids(self, farms) -> dict:
-        '''get farm or worker dict 
+        '''get farm or worker dict
         {farm_id: [{worker_name: worker_id}]}
         '''
         worker_ids = {}
@@ -102,7 +101,7 @@ class Wrapper():
                                         for worker in data.json().get('data')]}
                 logger.info(f'got farm ids list {worker_ids}')
             else:
-                logger.error(f'got empty Data... returning empty dct')
+                logger.error('got empty Data... returning empty dct')
         return worker_ids
 
     def h_post_command_execute(self, command, worker_name, farms):
@@ -130,17 +129,17 @@ class Wrapper():
         '''
         get all worker info
         '''
-        logger.info(f'collecting info..')
+        logger.info('collecting info..')
+        worker_info = None
         for farm in farm_info.keys():
             try:
                 req = self.h_req_preset(
                     endpoint=f'farms/{farm}/workers2', req_type='get')
                 if req and req.status_code == 200:
-                    return req.json()
-                else:
-                    return None
-            except Exception as e:
-                logger.error(f'Exception occured while processing: {e}')
+                    worker_info =  req.json()
+            except Exception as error:
+                logger.error(f'Exception occured while processing: {error}')
+        return worker_info
 
     def h_get_workers_gpus(self, farm_id, worker_ids: list):
         '''
@@ -150,8 +149,8 @@ class Wrapper():
         ids = []
         res = None
         for i in worker_ids:
-            for k, v in i.items():
-                ids.append(str(v))
+            for k, value in i.items():
+                ids.append(str(value))
         worker_ids_formatted = '%2C'.join(ids)
         endpoint = f'farms/{farm_id}/workers/gpus?worker_ids={worker_ids_formatted}'
         try:
@@ -160,11 +159,19 @@ class Wrapper():
                 res = req.json()
             else:
                 res = None
-        except Exception as e:
-            logger.error(f'Exception occured {e}')
+        except Exception as error:
+            logger.error(f'Exception occured {error}')
         return res
 
-    def h_get_benchmark_jobs(self, farm_id, worker_id=None):
+    def h_get_benchmark_jobs(self, farm_id):
+        """currently not working
+
+        Args:
+            farm_id (int): farm id in hiveos
+
+        Returns:
+            json: list of benchmarks
+        """
         logger.info('processing')
         endpoint = f'farms/{farm_id}/benchmarks/jobs'
         res = None
@@ -174,11 +181,20 @@ class Wrapper():
                 res = req.json()
             else:
                 res = None
-        except Exception as e:
-            logger.error(f'Exception occured {e}')
+        except Exception as error:
+            logger.error(f'Exception occured {error}')
         return res
 
     def h_post_benchmark(self, farm_id, worker_id=None):
+        """start benchmark job
+
+        Args:
+            farm_id (int): farm id from hiveos
+            worker_id (int, optional): farm id from hiveos. Defaults to None.
+
+        Returns:
+            json: result of post request
+        """
         logger.info('processing')
         endpoint = f'farms/{farm_id}/benchmarks'
         data = {'worker_id': worker_id,
@@ -191,23 +207,23 @@ class Wrapper():
                 logger.info(f'sucsesfully processed with response {res}')
             else:
                 res = None
-                logger.error(f'non 200 recieved')
-        except Exception as e:
-            logger.error(f'Exception occured {e}')
+                logger.error('non 200 recieved')
+        except Exception as error:
+            logger.error(f'Exception occured {error}')
             res = None
         logger.info('processed')
         return res
 
     def h_get_worker_hashrate(self, worker):
         '''returns worker hashrate in hash (not mega hash or etc) by coin'''
+        dict_with_hasrates = {}
         try:
-            dict_with_hasrates = {}
             target_lst = worker['miners_summary']['hashrates']
             if not target_lst:
                 logger.error('cant get miner summary')
-                return
+                return dict_with_hasrates
             for miner in target_lst:
-                miner_l = list()
+                miner_l = []
                 miner_l.append(miner)
                 # solomine
                 coin = self._get_info_from_worker_dct(miner_l, ['coin'])
@@ -220,53 +236,86 @@ class Wrapper():
                     dict_with_hasrates[dcoin[0]] = dhash[0]
             logger.debug(f'got reult {dict_with_hasrates}')
             return dict_with_hasrates
-        except IndexError as e:
-            logger.error(f'got index error while processing {e}')
+        except IndexError as error:
+            logger.error(f'got index error while processing {error}')
         except KeyError:
-            logger.error(f'No such keys in json')
+            logger.error('No such keys in json')
         except TypeError:
-            logger.error(f'invalid worker info type recieved!')
-        return None
+            logger.error('invalid worker info type recieved!')
+        return dict_with_hasrates
 
     def h_get_worker_algo(self, worker):
+        """get current worker algoritm
+
+        Args:
+            worker (int): id
+
+        Returns:
+            list: list of algos
+        """
+        algolist = []
         try:
             target_lst = worker['miners_summary']['hashrates']
             algolist = self._get_info_from_worker_dct(target_lst, ['algo', 'dalgo'])
-            return algolist
         except KeyError:
-            logger.error(f'No such keys in json')
+            logger.error('No such keys in json')
         except TypeError:
-            logger.error(f'invalid worker info type recieved!')
-        return None
+            logger.error('invalid worker info type recieved!')
+        return algolist
 
     def h_get_worker_coin(self, worker):
+        """get current mining coins
+
+        Args:
+            worker (int): id
+
+        Returns:
+            list: list of coins
+        """
+        coinlist = []
         try:
             target_lst = worker['miners_summary']['hashrates']
             coinlist = self._get_info_from_worker_dct(target_lst, ['coin', 'dcoin'])
-            return coinlist
         except KeyError:
-            logger.error(f'No such keys in json')
-            return None
+            logger.error('No such keys in json')
         except TypeError:
-            logger.error(f'invalid worker info type recieved!')
-            return None
+            logger.error('invalid worker info type recieved!')
+        return coinlist
 
-    def h_get_worker_power_cons(self, worker):
-        try:
-            return worker['stats']['power_draw']
-        except KeyError:
-            logger.error(f'No such keys in json')
-            return None
-        except TypeError:
-            logger.error(f'invalid worker info type recieved!')
-            return None
+    @staticmethod
+    def h_get_worker_power_cons(worker):
+        """get worker power consumption in watts
 
-    def h_get_worker_name(self, worker):
+        Args:
+            worker (int): id
+
+        Returns:
+            int: power consumption
+        """
+        powerdraw = str()
         try:
-            return worker['name']
+            powerdraw =  worker['stats']['power_draw']
         except KeyError:
-            logger.error(f'No such keys in json')
-            return None
+            logger.error('No such keys in json')
         except TypeError:
-            logger.error(f'invalid worker info type recieved!')
-            return None
+            logger.error('invalid worker info type recieved!')
+        return powerdraw
+
+    @staticmethod
+    def h_get_worker_name(worker):
+        """get worker name
+
+        Args:
+            worker (id): id
+
+        Returns:
+            str: worker name
+        """
+        worker_name = str()
+        try:
+            worker_name = worker['name']
+        except KeyError:
+            logger.error('No such keys in json')
+        except TypeError:
+            logger.error('invalid worker info type recieved!')
+        return worker_name
