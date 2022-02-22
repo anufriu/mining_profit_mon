@@ -2,7 +2,7 @@
 Overview:
 This is a MVP project for estimated mining profit visualisation via Grafana\Prometheus using HiveOS and minerstat api.
 Requeres preinstalled Python3+ Grafana and Prometheus. Im using this [stuff](https://github.com/stefanprodan/dockprom)
-![How it looks](https://github.com/anufriu/mining_profit_mon/blob/master/images/new_preview.png)
+![How it looks](https://github.com/anufriu/mining_profit_mon/blob/master/images/%D0%A1%D0%BD%D0%B8%D0%BC%D0%BE%D0%BA%20%D1%8D%D0%BA%D1%80%D0%B0%D0%BD%D0%B0%202022-02-22%20%D0%B2%2017.35.49.png)
 
 ## INSTALLATION
 __clone this repo__
