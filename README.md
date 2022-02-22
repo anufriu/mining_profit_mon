@@ -40,6 +40,8 @@ at this moment we have only 3 type of metric. They all Gauge
 3) coin_price - shows the price of the coin that is currently being mined.
 4) network_hashrate - network hashrate summary
 5) worker_incoin_profit - worker estimated profit in current mining coin
+6) * two_miners_actual_profitline_24h - optional if you using 2miners pool you can add your wallet address in config and set 2minerstat parameter to enabled=True ut can support any coin, but myltiplyer calculated only for ETH and RVN. pls open issue\pull request to change it.
+
 
 ###### Prometheus configuration
 prometehus http server starts on port 8910 by default, you can change this in config.ini file
