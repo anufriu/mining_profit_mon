@@ -62,7 +62,7 @@ try:
         logger.warning('power price is not set using 0.1$')
         power_price = 0.0001
     if not hiveos_token:
-        logger.error(f'cant find token field check the config. exiting...')
+        logger.error('cant find token field check the config. exiting...')
         sys.exit(1)
 except configparser.Error as e:
     logger.error(
@@ -71,16 +71,25 @@ except configparser.Error as e:
 
 
 class Coin():
+    """contains info about coin
+    """
     def __init__(self, coin):
         self.coin = coin
 
     def get_coin_info(self):
+        """get netrwork hashrate, price, diff from minerstat
+
+        Returns:
+            dict: info
+        """
         data = m_api.Wrapper().get_coin_info(self.coin)
         logger.debug(f'got answer from minerstat: {data}')
         return data
 
 
 class Worker():
+    """contains needful info about workers
+    """
     def __init__(self, data) -> None:
         self.w_name = h_api.h_get_worker_name(data)
         self.w_hashrate = h_api.h_get_worker_hashrate(data)
@@ -97,6 +106,8 @@ class Worker():
 
 
 class Calculations():
+    """class for calculations
+    """
 
     def __init__(self) -> None:
         pass
@@ -108,7 +119,7 @@ class Calculations():
             coinstat = Coin(coin).get_coin_info()
             if not coinstat:
                 logger.error(f'can get info from coinstat for {coin}')
-                return
+                return profit
             try:
                 reward = coinstat['reward']*1000
                 reward_unit = coinstat['reward_unit']
@@ -124,12 +135,24 @@ class Calculations():
                     profit[coin] = {'hour_reward': hour_reward.get('reward'),
                                     'hour_usd_reward': hour_usd_reward, 'coin': coin}
             except KeyError:
-                logger.error(f'cant get reward from minerstat!')
+                logger.error('cant get reward from minerstat!')
         except TypeError:
             logger.warning('cant get coin attr, probably custom miner is set')
         return profit
 
-    def calculate_hashrate_reward(self, hashrate, reward, reward_unit, coin) -> dict:
+    @staticmethod
+    def calculate_hashrate_reward(hashrate, reward, reward_unit, coin) -> dict:
+        """calculating reward for hashrate
+
+        Args:
+            hashrate (int): hashrate
+            reward (int): calculated reward
+            reward_unit (int): reward currency
+            coin (str): coint name (ticker)
+
+        Returns:
+            dict: {coin:{reward:hahrate_reward, unit:reward_unit}}
+        """
         h_rew = hashrate*reward
         logger.info(f'reward for 1 hour mining {coin} for {hashrate} h/s '
                     f'is: {h_rew} {reward_unit}')
@@ -137,7 +160,17 @@ class Calculations():
             coin: {"reward": hashrate*reward, "unit": reward_unit}}
         return hashrate_reward_dict
 
-    def calculate_powerdraw(self, powercons, hours=1):
+    @staticmethod
+    def calculate_powerdraw( powercons, hours=1):
+        """calculate powerdrow by hours
+
+        Args:
+            powercons (int): powerdraw metric from hiveos
+            hours (int, optional): hours number. Defaults to 1.
+
+        Returns:
+            int: powerdraw cost
+        """
         powerdraw1h = powercons*hours   # watts per 1h
         logger.debug(f'powerdraw 1h = {powerdraw1h}, price = {power_price}')
         powerdraw1h_cost = int(powerdraw1h)*float(power_price)
@@ -158,21 +191,58 @@ class Calculations():
 
 
 def generate_network_hrate_metric(coin_name: str, coin_hash: int, coin_algo: str):
+    """generate prometheus metric of network hashrate
+
+    Args:
+        coin_name (str): _description_
+        coin_hash (int): _description_
+        coin_algo (str): _description_
+    """
     try:
         labels = [coin_name, coin_algo]
         write_to_prom.set_mark(coin_hash, labels, 'network_hashrate')
-    except Exception as e:
-        logger.error(f'Error while writing to prometheus: {e}')
+    except Exception as error:
+        logger.error(f'Error while writing to prometheus: {error}')
 
 
 def generate_hour_reward_metric(coin_name: str, worker_name: str,
                                 coin_reward: float, metric_name: str):
+    """generate per hour reward metric
+
+    Args:
+        coin_name (str): _description_
+        worker_name (str): _description_
+        coin_reward (float): _description_
+        metric_name (str): _description_
+    """
     try:
         write_to_prom.set_mark(
             coin_reward, [coin_name, worker_name], metric_name)
-    except Exception as e:
-        logger.error(f'Error while writing to prometheus: {e}')
+    except Exception as error:
+        logger.error(f'Error while writing to prometheus: {error}')
 
+def skipper(name, status, coin)-> bool:
+    """check the nessesary attr of worker
+
+    Args:
+        name (str): _description_
+        status (bool): _description_
+        coin (str): _description_
+
+    Returns:
+        bool: _description_
+    """
+    is_skip = False
+    if not name:
+        is_skip = True
+        logger.error('cant get worker name, skipping')
+    if not status:
+        logger.warning('worker offline or have a bad status')
+        is_skip = True
+    if not coin:
+        logger.error('No info about current mining coin, skipping')
+        is_skip = True
+    return is_skip
 
 def generate_2miners_reward_metric(coin_ticker: str):
     if coin_ticker in config['2miners_stat']:
@@ -191,6 +261,8 @@ def generate_2miners_reward_metric(coin_ticker: str):
 
 
 def logic():
+    """main function contains all logic in it
+    """
     try:
         workers_info = h_api.h_get_workers_info(workers_dict)
         coinlist = []
@@ -199,21 +271,14 @@ def logic():
             logger.error('cant get info from hiveos api! sleeping')
             return
         for worker in workers_info['data']:
-            worker_data = dict(worker)
-            worker_attr = Worker(worker_data)
+            worker_attr = Worker(dict(worker))
             worker_calc = Calculations()
             counter = 0
-            if worker_attr.w_name:
-                logger.info(f'processing {worker_attr.w_name}')
-            else:
-                logger.error('cant get worker name, skipping')
+            attr_check = skipper(worker_attr.w_name,
+                worker_attr.worker_online, worker_attr.w_get_coin)
+            if not attr_check:
                 continue
-            if not worker_attr.worker_online:
-                logger.warning('worker offline or have a bad status')
-                continue
-            if not worker_attr.w_get_coin:
-                logger.error('No info about current mining coin, skipping')
-                continue
+            logger.info(f'processing {worker_attr.w_name}')
             for c in worker_attr.w_get_coin:
                 if not worker_attr.w_hashrate:
                     logger.error('No info about worker hashrate, skipping')
@@ -244,9 +309,8 @@ def logic():
                 worker_profit = worker_profit_clean.get(c)
                 if not worker_profit:
                     continue
-                hour_metric = worker_profit['hourly']
                 write_to_prom.set_mark(
-                    hour_metric, labels, 'clear_profitline_hourly')
+                    worker_profit['hourly'], labels, 'clear_profitline_hourly')
                 if not worker_attr.w_algo:
                     logger.error(
                         f'cant get algo for worker {worker_attr.w_name}')
@@ -270,6 +334,8 @@ def logic():
 
 
 def mainloop():
+    """mainloop
+    """
     while True:
         try:
             logic()
