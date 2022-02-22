@@ -259,7 +259,6 @@ def generate_2miners_reward_metric(coin_ticker: str):
         logger.warning(f'ticker {coin_ticker} is not presented in 2Miners config section'
                        f'its probably being mined on other pool')
 
-
 def logic():
     """main function contains all logic in it
     """
@@ -276,7 +275,7 @@ def logic():
             counter = 0
             attr_check = skipper(worker_attr.w_name,
                 worker_attr.worker_online, worker_attr.w_get_coin)
-            if not attr_check:
+            if attr_check:
                 continue
             logger.info(f'processing {worker_attr.w_name}')
             for c in worker_attr.w_get_coin:
@@ -326,7 +325,7 @@ def logic():
             if  config.has_section('2miners_stat'):
                 if config['2miners_stat']['enabled'] == 'True':
                     logger.debug(
-                        '2 miners scrape setted to true in config, processing')
+                        '2 miners scrape was set to true in config, processing')
                 generate_2miners_reward_metric(coin_ticker)
     except Exception as e:
         logger.error(
