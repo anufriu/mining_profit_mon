@@ -1,4 +1,4 @@
-'''cretes logger object
+'''creates logger object
 to accept same setting in all files'''
 import sys
 from pathlib import Path
@@ -24,6 +24,20 @@ def create_logger(loglevel):
 
     Returns:
         object: complete logger object
+    """ 
+    logfile = Path('log.log')
+    logfile.touch(exist_ok=True)
+    return logfile
+
+
+def create_logger(loglevel):
+    """creates logger obl=ject
+
+    Args:
+        loglevel (str): log level
+
+    Returns:
+        object: complete logger object
     """
     logger.remove()
     logger.level("INFO", color="<green>")
@@ -38,4 +52,3 @@ def create_logger(loglevel):
         format="[{time:YYYY-MM-DD at HH:mm:ss}] <level>[{level}]<bold>[{function}] </bold>{message}</level>",
         level=loglevel, backtrace=True, diagnose=True)
     return logger
-    
