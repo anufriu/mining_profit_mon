@@ -245,6 +245,11 @@ def skipper(name, status, coin)-> bool:
     return is_skip
 
 def generate_2miners_reward_metric(coin_ticker: str):
+    """create reward metric based on 2miners api
+
+    Args:
+        coin_ticker (str): _description_
+    """
     if coin_ticker in config['2miners_stat']:
         two_miners_coin_reward = t_miners_api(coin_ticker,
                                               config['2miners_stat'][coin_ticker]).get_sumreward_by_account()
@@ -252,8 +257,8 @@ def generate_2miners_reward_metric(coin_ticker: str):
         try:
             write_to_prom.set_mark(
                 coin_reward_24h, [coin_ticker], 'two_miners_actual_profitline_24h')
-        except Exception as e:
-            logger.error(f'Error while writing to prometheus: {e}')
+        except Exception as error:
+            logger.error(f'Error while writing to prometheus: {error}')
 
     else:
         logger.warning(f'ticker {coin_ticker} is not presented in 2Miners config section'
@@ -327,7 +332,7 @@ def logic():
                     logger.debug(
                         '2 miners scrape was set to true in config, processing')
                 generate_2miners_reward_metric(coin_ticker)
-    except Exception as e:
+    except Exception:
         logger.error(
             f'some shit happened! sleeping and hope its gone: {traceback.format_exc()}')
 

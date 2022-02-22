@@ -1,3 +1,4 @@
+'''wraparound 2miners api'''
 import os
 
 import requests
@@ -11,7 +12,7 @@ logger = create_logger(loglevel)
 
 class Wrapper:
     '''
-    contains a functions to get 
+    contains a functions to gets
     data from 2miners.com
     return dict liker {"Last 24 hours":reward, "Last 60 minutes":reward}
     '''
@@ -26,13 +27,13 @@ class Wrapper:
 
     def get_sumreward_by_account(self) -> dict:
         """
-        process request to api and 
+        process request to api
         """
         reward_by_interval = {}
         try:
             req = requests.get(self.main_url+'/accounts/'+self.wallet,
                                headers=self.headers)
-            if req.status_code == requests.codes.ok:
+            if req.status_code == 200:
                 for reward in req.json()['sumrewards']:
                     reward_by_interval[reward['name']] = reward['reward'] * \
                         self.reward_multy_map[self.pool_ticker]
@@ -41,7 +42,7 @@ class Wrapper:
             else:
                 logger.error(
                     f'Status code of request to {req.url} is not ok, got {req}')
-        except requests.exceptions.RequestException as e:
+        except requests.exceptions.RequestException as error:
             logger.error(
-                f'problem with processing request to 2 miners got {e}')
+                f'problem with processing request to 2 miners got {error}')
         return reward_by_interval

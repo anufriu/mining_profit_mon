@@ -17,21 +17,7 @@ def create_or_attach_logfile():
     return logfile
 
 def create_logger(loglevel):
-    """creates logger obl=ject
-
-    Args:
-        loglevel (str): log level
-
-    Returns:
-        object: complete logger object
-    """ 
-    logfile = Path('log.log')
-    logfile.touch(exist_ok=True)
-    return logfile
-
-
-def create_logger(loglevel):
-    """creates logger obl=ject
+    """creates logger object
 
     Args:
         loglevel (str): log level
