@@ -274,10 +274,11 @@ def logic():
         if not workers_info:
             logger.error('cant get info from hiveos api! sleeping')
             return
-        for worker in workers_info['data']:
+        for worker in workers_info['data']: 
             worker_attr = Worker(dict(worker))
             worker_calc = Calculations()
             counter = 0
+            worker_consumption = worker_calc.calculate_powerdraw(worker_attr.w_power_cons)
             attr_check = skipper(worker_attr.w_name,
                 worker_attr.worker_online, worker_attr.w_get_coin)
             if attr_check:
