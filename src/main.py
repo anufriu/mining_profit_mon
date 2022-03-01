@@ -93,16 +93,19 @@ class Worker():
     def __init__(self, data) -> None:
         self.w_name = h_api.h_get_worker_name(data)
         self.w_hashrate = h_api.h_get_worker_hashrate(data)
+        self.w_power_cons = h_api.h_get_worker_power_cons(data)
         self.worker_online = True
+        self.w_get_coin = h_api.h_get_worker_coin(data)
+        self.w_algo = h_api.h_get_worker_algo(data)
+        self.w_get_coin = h_api.h_get_worker_coin(data)
         if not self.w_hashrate:
             self.worker_online = False
         if not data['stats']['online']:
             self.worker_online = False
             logger.warning(f'{self.w_name} is OFFLINE, skipping')
             return
-        self.w_algo = h_api.h_get_worker_algo(data)
-        self.w_get_coin = h_api.h_get_worker_coin(data)
-        self.w_power_cons = h_api.h_get_worker_power_cons(data)
+
+        
 
 
 class Calculations():
@@ -278,11 +281,11 @@ def logic():
             worker_attr = Worker(dict(worker))
             worker_calc = Calculations()
             counter = 0
-            worker_consumption = worker_calc.calculate_powerdraw(worker_attr.w_power_cons)
             attr_check = skipper(worker_attr.w_name,
                 worker_attr.worker_online, worker_attr.w_get_coin)
             if attr_check:
                 continue
+            worker_consumption = worker_calc.calculate_powerdraw(worker_attr.w_power_cons)
             logger.info(f'processing {worker_attr.w_name}')
             for c in worker_attr.w_get_coin:
                 if not worker_attr.w_hashrate:

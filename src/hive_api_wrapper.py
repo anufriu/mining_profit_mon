@@ -25,7 +25,7 @@ class Wrapper():
                         'Content-Type': 'application/json', 'Authorization': f'{token}'}
         self.main_url = 'https://api2.hiveos.farm/api/v2/'
 
-    def h_req_preset(self, endpoint: str, req_type: str = "get", payload: dict=None):
+    def h_req_preset(self, endpoint: str, req_type: str = "get", payload: dict={}):
         '''готовим обьект requests'''
         logger.info(
             f'processing endpoint {endpoint} with request type: {req_type}')
