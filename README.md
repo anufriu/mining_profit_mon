@@ -1,3 +1,4 @@
+# IMPORTANT!!! This tool has currently stopped working, when the hiveos team fixes the api authorization it will be fine again. see [this](https://hiveon.com/forum/t/hive-api-v2/4490) for more information
 # hiveos worker profit monitoring
 Overview:
 This is a MVP project for estimated mining profit visualisation via Grafana\Prometheus using HiveOS and minerstat api.
